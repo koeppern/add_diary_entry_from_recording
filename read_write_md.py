@@ -47,13 +47,19 @@ def add_audios_to_df(df, folder_audio, open_ai_key):
                 with open(audio_file, "rb") as f:
                     # Pass the file object to the transcribe method
                     if audio_file not in scanned_files:
-                        result = openai.Audio.transcribe("whisper-1", f)
+                        result = openai.Audio.translate(
+                            model = "whisper-1", 
+                            language="en",
+                            response_format="text",
+                            file=f)
+
+                        print(result)
 
                         print(f"Apply Whisper to {audio_file}.")
 
                         scanned_files.append(audio_file)
 
-                        df = add_new_ro_to_df(df, date, result.text)
+                        df = add_new_ro_to_df(df, date, result)
 
     # Write the list to the file
     with open('scanned_files.txt', 'w') as file:
@@ -95,7 +101,6 @@ def load_md_file_into_df(filename, df):
 
             df = add_new_ro_to_df(df, this_date, this_text)
 
-            print(this_text)
     return df
 
 
@@ -114,5 +119,5 @@ df_with_audio = add_audios_to_df(df, folder_audio, open_ai_key)
 
 write_df_to_md_file(filename_out, df_with_audio)
 
-# shutil.copyfile(filename_out, filename)
+shutil.copyfile(filename_out, filename)
 # %%
