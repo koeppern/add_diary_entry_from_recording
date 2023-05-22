@@ -100,10 +100,51 @@ The function then calls another function called "add_new_row_to_df" to add the n
 
 Finally, the function returns the updated dataframe.
 
+
 ### Recognize text in audio files
+
+FILETYPE AUDIO
+USE WHISPER
+TRANSLATE INTO ENGLISH
+ADD TO DF
+
 
 ### Write diary MD file
 
+``` python
+write_df_to_md_file(filename_out, df_with_audio)
+```
+stores the content of my diary data fame `df` as a markdownfile in the format I denfied. For that the function
+``` python
+def write_df_to_md_file(filename_out, df):
+    dates_texts = df.groupby("date").apply(lambda x: "\n".join("- " + row["text"] for _, row in x.iterrows()) + "\n").reset_index()
+    dates_texts["date"] = pd.to_datetime(dates_texts["date"])  # Convert date column to datetime type
+    dates_texts = dates_texts.sort_values("date")  # Sort by date column in ascending order
+    dates_texts["date"] = dates_texts["date"].dt.strftime("%Y-%m-%d")  # Convert date column back to string format
+
+    texts_out = "# Diary\n\n" + "\n".join(["## " + row["date"] + "\n" + row[0] for _, row in dates_texts.iterrows()])
+
+    with open(filename_out, "w") as file:
+        file.write(texts_out)
+```
+is used: The function takes two arguments: "filename_out" and "df". The "filename_out" argument is the name of the markdown file that you want to write the dataframe to, and the "df" argument is the pandas dataframe that contains the dictionary entries.
+
+The function starts by grouping the dataframe by the "date" column using the "groupby" method. It then applies a lambda function to each group that concatenates the "text" column for each row with a dash ("-") and a newline character ("\n"). This creates a string of all the dictionary entries for each date.
+
+The resulting "dates_texts" variable is a dataframe with two columns: "date" and "0". The "date" column contains the date strings and the "0" column contains the concatenated dictionary entries for each date.
+
+The function then converts the "date" column to a datetime type using the "pd.to_datetime" method. This allows the dates to be sorted in chronological order.
+
+The "dates_texts" dataframe is then sorted by the "date" column in ascending order using the "sort_values" method.
+
+The "date" column is then converted back to a string format using the "dt.strftime" method.
+
+The "texts_out" variable is then created by concatenating the date strings and dictionary entries using the "join" method. The resulting string is formatted with headers and newlines to create a markdown file.
+
+Finally, the markdown file is written to disk using the "open" function and the "write" method.
+
+
 ## Recording on my smartphone
 
+EASYVOICERECORDE, FILENAME WITHH DATA
 
