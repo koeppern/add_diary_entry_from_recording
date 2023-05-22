@@ -5,9 +5,14 @@ import pandas as pd
 import os
 import re
 import openai
+import configparser
+import shutil
+
 
 
 # Parameters
+config_filename = "cofig.ini"
+
 filename = "G:\Meine Ablage\johannes_notes\diary_johannes_koeppern.md"
 
 filename_out = "out.md"
@@ -17,6 +22,45 @@ folder_audio = "G:\Meine Ablage\Easy Voice Recorder"
 open_ai_key = os.environ.get("OPENAI_API_KEY")
 
 # Funcitons
+def add_audios_to_df(df, folder_audio, open_ai_key):
+    openai.api_key = open_ai_key
+    
+    # Load the list from the file if it exists
+    if os.path.isfile('scanned_files.txt'):
+        with open('scanned_files.txt', 'r') as file:
+            scanned_files = file.read().splitlines()
+    else:
+        scanned_files = []
+
+    print(scanned_files)
+
+    # Loop through the files in the folder
+    for filename in os.listdir(folder_audio):
+        if filename.endswith(".mp3"):
+            # Extract the date from the file name using regular expressions
+            match = re.search(r"\d{4}-\d{2}-\d{2}", filename)
+            if match:
+                date = match.group()
+                print(date)
+                audio_file = folder_audio + "\\" + filename
+
+                with open(audio_file, "rb") as f:
+                    # Pass the file object to the transcribe method
+                    if audio_file not in scanned_files:
+                        result = openai.Audio.transcribe("whisper-1", f)
+
+                        print(f"Apply Whisper to {audio_file}.")
+
+                        scanned_files.append(audio_file)
+
+                        df = add_new_ro_to_df(df, date, result.text)
+
+    # Write the list to the file
+    with open('scanned_files.txt', 'w') as file:
+        file.write('\n'.join(scanned_files))
+
+    return df
+
 def add_new_ro_to_df(df, this_date, this_text):
     new_row = pd.DataFrame({"date": [this_date], "text": [this_text]})
 
@@ -50,37 +94,25 @@ def load_md_file_into_df(filename, df):
 
 
             df = add_new_ro_to_df(df, this_date, this_text)
+
+            print(this_text)
     return df
 
 
 
 # Main script
-openai.api_key = open_ai_key
+config = configparser.ConfigParser()
 
-df = pd.DataFrame()
+config.read(config_filename)
 
-df = load_md_file_into_df(filename, df)
-
-write_df_to_md_file(filename_out, df)
-
-# Loop through the files in the folder
-for filename in os.listdir(folder_audio):
-    if filename.endswith(".mp3"):
-        # Extract the date from the file name using regular expressions
-        match = re.search(r"\d{4}-\d{2}-\d{2}", filename)
-        if match:
-            date = match.group()
-            print(date)
-            audio_file = folder_audio + "\\" + filename
-
-            with open(audio_file, "rb") as f:
-                # Pass the file object to the transcribe method
-                result = openai.Audio.transcribe("whisper-1", f)
-            print(result.text)
-            break
+open_ai_key = config['DEFAULT']['OPENAI_API_KEY']
 
 
+df = load_md_file_into_df(filename, pd.DataFrame())
 
+df_with_audio = add_audios_to_df(df, folder_audio, open_ai_key)
 
+write_df_to_md_file(filename_out, df_with_audio)
 
+# shutil.copyfile(filename_out, filename)
 # %%
