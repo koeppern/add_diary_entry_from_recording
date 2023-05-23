@@ -103,10 +103,80 @@ Finally, the function returns the updated dataframe.
 
 ### Recognize text in audio files
 
-FILETYPE AUDIO
-USE WHISPER
-TRANSLATE INTO ENGLISH
-ADD TO DF
+OpenAI's [Whisper](https://openai.com/research/whisper) is used to extract and translate text from MP3 files. The function
+``` python
+df_with_audio = add_audios_to_df(df, folder_audio, open_ai_key)
+```
+adds the text to a Pandas data frame:
+``` python
+def add_audios_to_df(df, folder_audio, open_ai_key):
+    openai.api_key = open_ai_key
+    
+    # Load the list from the file if it exists
+    if os.path.isfile('scanned_files.txt'):
+        try:
+            with open('scanned_files.txt', 'r') as file:
+                scanned_files = file.read().splitlines()
+
+                print(f"Loaded list of of already scanned audio files:\n{scanned_files}")
+        except:
+            scanned_files = []
+    
+    else:
+        scanned_files = []
+
+    print(scanned_files)
+
+    # Loop through the files in the folder
+    for filename in os.listdir(folder_audio):
+        if filename.endswith(".mp3"):
+            # Extract the date from the file name using regular expressions
+            match = re.search(r"\d{4}-\d{2}-\d{2}", filename)
+            if match:
+                date = match.group()
+                #print(date)
+                audio_file = folder_audio + "\\" + filename
+
+                try:
+                    with open(audio_file, "rb") as f:
+                        # Pass the file object to the transcribe method
+                        if audio_file not in scanned_files:
+                            result = openai.Audio.translate(
+                                model = "whisper-1", 
+                                language="en",
+                                response_format="text",
+                                file=f)
+                            
+                            print(result)
+
+                            print(f"Apply Whisper to {audio_file}.")
+
+                            scanned_files.append(audio_file)
+
+                            df = add_new_row_to_df(df, date, result)
+                except:
+                    result = ""
+
+                    
+
+    # Write the list to the file
+    try:
+        with open('scanned_files.txt', 'w') as file:
+            file.write('\n'.join(scanned_files))
+    except:
+        print("Error while saving list of processed audio files.")
+
+    return df
+```
+
+The function takes in three parameters: df, which is a pandas DataFrame, folder_audio, which is a string representing the path to the folder containing the audio files, and open_ai_key, which is a string representing the OpenAI API key.
+
+The function first sets the OpenAI API key using the openai.api_key variable. It then checks if a file called scanned_files.txt exists in the current directory. If it does, the function reads the contents of the file into a list called scanned_files. If it doesn't exist, the function initializes an empty list called scanned_files.
+
+The function then loops through all the files in the folder_audio directory and checks if the file has a .mp3 extension. If it does, the function extracts the date from the file name using regular expressions and reads the audio file into a file object. If the audio file has not already been scanned (i.e., its path is not in the scanned_files list), the function passes the file object to the OpenAI API's Audio.translate method to transcribe the audio file. The resulting transcription is added to the df DataFrame using the add_new_row_to_df function (not shown in this code snippet).
+
+Finally, the function writes the scanned_files list to the scanned_files.txt file and returns the updated df DataFrame.
+
 
 
 ### Write diary MD file
