@@ -146,5 +146,5 @@ Finally, the markdown file is written to disk using the "open" function and the 
 
 ## Recording on my smartphone
 
-EASYVOICERECORDE, FILENAME WITHH DATA
+I use [Easy Voice Recorder]() on my Android smartphone to record the audio file. The apps automatically names the filies in the fomat*YYYY-MM-DD-HH-MM.mp3*, for example *2023-05-22-16-55.mp3*. The rexcordings are synced with my *Google Drive* account so this script can also access them after they were synced with my Windows PC.
 

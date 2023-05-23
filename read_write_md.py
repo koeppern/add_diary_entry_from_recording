@@ -112,15 +112,11 @@ def write_df_to_md_file(filename_out, df):
             texts_out += "- " + value + "\n"
         texts_out += "\n\n"
 
+    
+    # texts_out = "\n".join(texts_out)
+    # texts_out = "# Diary\n\n" + texts_out
 
 
-
-
-    #texts_out = "# Diary\n\n" + "\n".join(["## " + row["date"] + "\n" + row[0] for _, row in dates_texts.iterrows()])
-    #texts_out = "# Diary\n\n"
-
-    #for row in dates_texts:
-        #texts_out += "## " + row["date"] + "\n" + row[0] + "\n"
 
 
     with open(filename_out, "w", newline='\n', encoding='utf-8') as file:
@@ -165,5 +161,5 @@ df_with_audio = add_audios_to_df(df, folder_audio, open_ai_key)
 
 write_df_to_md_file(filename_out, df_with_audio)
 
-shutil.copyfile(filename_out, filename)
+#shutil.copyfile(filename_out, filename)
 # %%
