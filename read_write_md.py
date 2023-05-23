@@ -48,7 +48,7 @@ def add_audios_to_df(df, folder_audio, open_ai_key):
             match = re.search(r"\d{4}-\d{2}-\d{2}", filename)
             if match:
                 date = match.group()
-                print(date)
+                #print(date)
                 audio_file = folder_audio + "\\" + filename
 
                 try:
@@ -60,16 +60,18 @@ def add_audios_to_df(df, folder_audio, open_ai_key):
                                 language="en",
                                 response_format="text",
                                 file=f)
+                            
+                            print(result)
+
+                            print(f"Apply Whisper to {audio_file}.")
+
+                            scanned_files.append(audio_file)
+
+                            df = add_new_row_to_df(df, date, result)
                 except:
                     result = ""
 
-                    print(result)
-
-                    print(f"Apply Whisper to {audio_file}.")
-
-                    scanned_files.append(audio_file)
-
-                    df = add_new_ro_to_df(df, date, result)
+                    
 
     # Write the list to the file
     try:
@@ -80,7 +82,7 @@ def add_audios_to_df(df, folder_audio, open_ai_key):
 
     return df
 
-def add_new_ro_to_df(df, this_date, this_text):
+def add_new_row_to_df(df, this_date, this_text):
     new_row = pd.DataFrame({"date": [this_date], "text": [this_text]})
 
     df = pd.concat([df, new_row], ignore_index=True)
@@ -91,10 +93,37 @@ def write_df_to_md_file(filename_out, df):
     dates_texts["date"] = pd.to_datetime(dates_texts["date"])  # Convert date column to datetime type
     dates_texts = dates_texts.sort_values("date")  # Sort by date column in ascending order
     dates_texts["date"] = dates_texts["date"].dt.strftime("%Y-%m-%d")  # Convert date column back to string format
+    dates_texts = [str(text).rstrip('\n') for text in dates_texts]
 
-    texts_out = "# Diary\n\n" + "\n".join(["## " + row["date"] + "\n" + row[0] for _, row in dates_texts.iterrows()])
+    df_for_output = df
+    df_for_output["date"] = pd.to_datetime(df["date"])
 
-    with open(filename_out, "w") as file:
+    df_for_output_sorted = df_for_output.sort_values("date")  # Sort by date column in ascending order
+    df_for_output_sorted.date = df_for_output_sorted["date"].dt.strftime("%Y-%m-%d")  # Convert date column back to string format
+    df_for_output_sorted.text = [text.rstrip('\n') for text in df_for_output_sorted.text]
+
+    texts_out = "# Diary\n\n"#
+
+    for date, group in df_for_output_sorted.groupby("date"):
+        texts_out += f"## {date}\n"
+        for value in group.text:
+            value = value.lstrip('\t ')  # Remove leading tabs and spaces
+
+            texts_out += "- " + value + "\n"
+        texts_out += "\n\n"
+
+
+
+
+
+    #texts_out = "# Diary\n\n" + "\n".join(["## " + row["date"] + "\n" + row[0] for _, row in dates_texts.iterrows()])
+    #texts_out = "# Diary\n\n"
+
+    #for row in dates_texts:
+        #texts_out += "## " + row["date"] + "\n" + row[0] + "\n"
+
+
+    with open(filename_out, "w", newline='\n', encoding='utf-8') as file:
         file.write(texts_out)
 
 def load_md_file_into_df(filename, df):
@@ -112,7 +141,7 @@ def load_md_file_into_df(filename, df):
             this_text = line[2:].lstrip(" ")
 
 
-            df = add_new_ro_to_df(df, this_date, this_text)
+            df = add_new_row_to_df(df, this_date, this_text)
 
     return df
 
