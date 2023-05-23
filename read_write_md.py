@@ -11,7 +11,8 @@ import shutil
 
 
 # Parameters
-config_filename = "cofig.ini"
+# config_filename = "cofig.ini"
+config_filename = "C:\config\cofig.ini"
 
 filename = "G:\Meine Ablage\johannes_notes\diary_johannes_koeppern.md"
 
@@ -27,8 +28,14 @@ def add_audios_to_df(df, folder_audio, open_ai_key):
     
     # Load the list from the file if it exists
     if os.path.isfile('scanned_files.txt'):
-        with open('scanned_files.txt', 'r') as file:
-            scanned_files = file.read().splitlines()
+        try:
+            with open('scanned_files.txt', 'r') as file:
+                scanned_files = file.read().splitlines()
+
+                print(f"Loaded list of of already scanned audio files:\n{scanned_files}")
+        except:
+            scanned_files = []
+    
     else:
         scanned_files = []
 
@@ -44,26 +51,32 @@ def add_audios_to_df(df, folder_audio, open_ai_key):
                 print(date)
                 audio_file = folder_audio + "\\" + filename
 
-                with open(audio_file, "rb") as f:
-                    # Pass the file object to the transcribe method
-                    if audio_file not in scanned_files:
-                        result = openai.Audio.translate(
-                            model = "whisper-1", 
-                            language="en",
-                            response_format="text",
-                            file=f)
+                try:
+                    with open(audio_file, "rb") as f:
+                        # Pass the file object to the transcribe method
+                        if audio_file not in scanned_files:
+                            result = openai.Audio.translate(
+                                model = "whisper-1", 
+                                language="en",
+                                response_format="text",
+                                file=f)
+                except:
+                    result = ""
 
-                        print(result)
+                    print(result)
 
-                        print(f"Apply Whisper to {audio_file}.")
+                    print(f"Apply Whisper to {audio_file}.")
 
-                        scanned_files.append(audio_file)
+                    scanned_files.append(audio_file)
 
-                        df = add_new_ro_to_df(df, date, result)
+                    df = add_new_ro_to_df(df, date, result)
 
     # Write the list to the file
-    with open('scanned_files.txt', 'w') as file:
-        file.write('\n'.join(scanned_files))
+    try:
+        with open('scanned_files.txt', 'w') as file:
+            file.write('\n'.join(scanned_files))
+    except:
+        print("Error while saving list of processed audio files.")
 
     return df
 
@@ -103,15 +116,19 @@ def load_md_file_into_df(filename, df):
 
     return df
 
+def load_api_key(config_filename):
+    config = configparser.ConfigParser()
+
+    config.read(config_filename)
+
+    open_ai_key = config['DEFAULT']['OPENAI_API_KEY']
+    
+    return open_ai_key
+
 
 
 # Main script
-config = configparser.ConfigParser()
-
-config.read(config_filename)
-
-open_ai_key = config['DEFAULT']['OPENAI_API_KEY']
-
+open_ai_key = load_api_key(config_filename)
 
 df = load_md_file_into_df(filename, pd.DataFrame())
 
