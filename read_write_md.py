@@ -39,7 +39,6 @@ def add_audios_to_df(df, folder_audio, open_ai_key):
     else:
         scanned_files = []
 
-    print(scanned_files)
 
     # Loop through the files in the folder
     for filename in os.listdir(folder_audio):
@@ -60,6 +59,8 @@ def add_audios_to_df(df, folder_audio, open_ai_key):
                                 language="en",
                                 response_format="text",
                                 file=f)
+                            
+                            result += f", [{filename}]({audio_file})"
                             
                             print(result)
 
@@ -89,12 +90,6 @@ def add_new_row_to_df(df, this_date, this_text):
     return df
 
 def write_df_to_md_file(filename_out, df):
-    dates_texts = df.groupby("date").apply(lambda x: "\n".join("- " + row["text"] for _, row in x.iterrows()) + "\n").reset_index()
-    dates_texts["date"] = pd.to_datetime(dates_texts["date"])  # Convert date column to datetime type
-    dates_texts = dates_texts.sort_values("date")  # Sort by date column in ascending order
-    dates_texts["date"] = dates_texts["date"].dt.strftime("%Y-%m-%d")  # Convert date column back to string format
-    dates_texts = [str(text).rstrip('\n') for text in dates_texts]
-
     df_for_output = df
     df_for_output["date"] = pd.to_datetime(df["date"])
 
@@ -111,12 +106,6 @@ def write_df_to_md_file(filename_out, df):
 
             texts_out += "- " + value + "\n"
         texts_out += "\n\n"
-
-    
-    # texts_out = "\n".join(texts_out)
-    # texts_out = "# Diary\n\n" + texts_out
-
-
 
 
     with open(filename_out, "w", newline='\n', encoding='utf-8') as file:
