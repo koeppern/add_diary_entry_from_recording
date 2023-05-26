@@ -23,7 +23,7 @@ folder_audio = "G:\Meine Ablage\Easy Voice Recorder"
 open_ai_key = os.environ.get("OPENAI_API_KEY")
 
 # Funcitons
-def add_audios_to_df(df, folder_audio, open_ai_key):
+def add_audios_to_df(folder_audio, open_ai_key, df=pd.DataFrame):
     openai.api_key = open_ai_key
     
     # Load the list from the file if it exists
@@ -111,7 +111,7 @@ def write_df_to_md_file(filename_out, df):
     with open(filename_out, "w", newline='\n', encoding='utf-8') as file:
         file.write(texts_out)
 
-def load_md_file_into_df(filename, df):
+def load_md_file_into_df(filename, df=pd.DataFrame()):
     with open(filename, "r") as file:
         text_in = file.read()
 
@@ -144,9 +144,9 @@ def load_api_key(config_filename):
 # Main script
 open_ai_key = load_api_key(config_filename)
 
-df = load_md_file_into_df(filename, pd.DataFrame())
+df = load_md_file_into_df(filename)
 
-df_with_audio = add_audios_to_df(df, folder_audio, open_ai_key)
+df_with_audio = add_audios_to_df(folder_audio, open_ai_key, df)
 
 write_df_to_md_file(filename_out, df_with_audio)
 
