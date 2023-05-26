@@ -32,7 +32,7 @@ def add_audios_to_df(folder_audio, open_ai_key, df=pd.DataFrame):
             with open('scanned_files.txt', 'r') as file:
                 scanned_files = file.read().splitlines()
 
-                print(f"Loaded list of of already scanned audio files:\n{scanned_files}")
+                # print(f"Loaded list of of already scanned audio files:\n{scanned_files}")
         except:
             scanned_files = []
     
@@ -60,9 +60,11 @@ def add_audios_to_df(folder_audio, open_ai_key, df=pd.DataFrame):
                                 response_format="text",
                                 file=f)
                             
-                            result += f", [{filename}]({audio_file})"
+                            audio_file_replace = audio_file.replace("\\", "/").replace(" ", "%20")
                             
-                            print(result)
+                            result += f", [{filename}](file://{audio_file_replace})"
+                            
+                            #print(result)
 
                             print(f"Apply Whisper to {audio_file}.")
 
@@ -150,5 +152,5 @@ df_with_audio = add_audios_to_df(folder_audio, open_ai_key, df)
 
 write_df_to_md_file(filename_out, df_with_audio)
 
-#shutil.copyfile(filename_out, filename)
+shutil.copyfile(filename_out, filename)
 # %%
