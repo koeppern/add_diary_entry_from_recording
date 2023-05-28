@@ -29,7 +29,7 @@ def add_audios_to_df(folder_audio, open_ai_key, df=pd.DataFrame):
     # Load the list from the file if it exists
     if os.path.isfile('scanned_files.txt'):
         try:
-            with open('scanned_files.txt', 'r') as file:
+            with open('scanned_files.txt', 'r', encoding='utf-8') as file:
                 scanned_files = file.read().splitlines()
 
                 # print(f"Loaded list of of already scanned audio files:\n{scanned_files}")
@@ -60,9 +60,18 @@ def add_audios_to_df(folder_audio, open_ai_key, df=pd.DataFrame):
                                 response_format="text",
                                 file=f)
                             
-                            audio_file_replace = audio_file.replace("\\", "/").replace(" ", "%20")
+                            audio_file_replace = (audio_file.
+                                                  strip().
+                                                  replace("\\", "/").
+                                                  replace(" ", "%20").
+                                                  rstrip("\n").rstrip("\r\n").
+                                                  replace("\n", ""))
                             
-                            result += f", [{filename}](file://{audio_file_replace})"
+                            result = result.strip() + f", [{filename}](file://{audio_file_replace})"
+
+                
+
+                            result = result.strip()
                             
                             #print(result)
 
@@ -78,7 +87,7 @@ def add_audios_to_df(folder_audio, open_ai_key, df=pd.DataFrame):
 
     # Write the list to the file
     try:
-        with open('scanned_files.txt', 'w') as file:
+        with open('scanned_files.txt', 'w', encoding='utf-8') as file:
             file.write('\n'.join(scanned_files))
     except:
         print("Error while saving list of processed audio files.")
@@ -92,7 +101,7 @@ def add_new_row_to_df(df, this_date, this_text):
     return df
 
 def write_df_to_md_file(filename_out, df):
-    df_for_output = df
+    df_for_output = df.drop_duplicates()
     df_for_output["date"] = pd.to_datetime(df["date"])
 
     df_for_output_sorted = df_for_output.sort_values("date")  # Sort by date column in ascending order
@@ -114,7 +123,7 @@ def write_df_to_md_file(filename_out, df):
         file.write(texts_out)
 
 def load_md_file_into_df(filename, df=pd.DataFrame()):
-    with open(filename, "r") as file:
+    with open(filename, "r", encoding="utf-8") as file:
         text_in = file.read()
 
     lines = text_in.split("\n")
