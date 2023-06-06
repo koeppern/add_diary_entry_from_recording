@@ -7,10 +7,14 @@ import re
 import openai
 import configparser
 import shutil
+import subprocess
+import getpass
+
 
 
 
 # Parameters
+git_folder_path = "G://Meine Ablage//johannes_notes"
 # config_filename = "cofig.ini"
 config_filename = "C:\config\cofig.ini"
 
@@ -102,7 +106,7 @@ def add_new_row_to_df(df, this_date, this_text):
 
 def write_df_to_md_file(filename_out, df):
     df_for_output = df.drop_duplicates()
-    df_for_output["date"] = pd.to_datetime(df["date"])
+    df_for_output.loc[:, "date"] = pd.to_datetime(df["date"])
 
     df_for_output_sorted = df_for_output.sort_values("date")  # Sort by date column in ascending order
     df_for_output_sorted.date = df_for_output_sorted["date"].dt.strftime("%Y-%m-%d")  # Convert date column back to string format
@@ -150,9 +154,33 @@ def load_api_key(config_filename):
     
     return open_ai_key
 
+def git_commit(git_folder_path, commit_message = "diary_whisper", debug=False):
+    
+
+    print(f"Current working directory: {os.getcwd()}")
+    print(f"Git folder path: {git_folder_path}")
+
+    # Commit the changes with the specified message
+    try:
+        subprocess.run(["git", "add", "-A"], check=True, cwd=git_folder_path)
+
+        
+
+        commit_process = subprocess.run(["git", "commit", "-m", commit_message], capture_output=True, text=True)
+        if debug:
+            print(f"Git commit output: {commit_process.stdout}")
+            print(f"Git commit error: {commit_process.stderr}")
+            print(f"Git commit exit code: {commit_process.returncode}")
+    except subprocess.CalledProcessError as e:
+        # Add debug information
+        print(f"Git commit failed. Error message: {e.stderr}")
+
+
 
 
 # Main script
+os.chdir(git_folder_path)
+
 open_ai_key = load_api_key(config_filename)
 
 df = load_md_file_into_df(filename)
@@ -162,4 +190,6 @@ df_with_audio = add_audios_to_df(folder_audio, open_ai_key, df)
 write_df_to_md_file(filename_out, df_with_audio)
 
 shutil.copyfile(filename_out, filename)
+
+git_commit(git_folder_path)
 # %%
