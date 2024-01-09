@@ -118,8 +118,6 @@ def extract_text_from_audios(client, df_audio, play_audio=False):
 
                 print(f"Apply Whisper to {audio_file}.")
 
-                print(df_audio["text"])
-
                 df_audio.loc[index, "text"] = result
                 df_audio.loc[index, "written_to_df"] = False
                 df_audio.loc[index, "did_extraction"] = True
@@ -142,7 +140,7 @@ def add_item_to_audio_section(filename_journal, new_item, print_new_content=Fals
     if content_audio:
         content_audio = content_audio.group(0)
     else:
-        content_audio = "\t- # Voice recording"
+        content_audio = r"\t- # Voice recording"
 
     # Content without audio part
     content_wo_audio = re.sub(
@@ -153,11 +151,14 @@ def add_item_to_audio_section(filename_journal, new_item, print_new_content=Fals
     # Regular expression pattern to match entries following '- '
     entry_pattern = r"(?m)^\s*- (.*?)(?=\n\s*- |\Z)"
 
+    # drop first row containing '- # Voice recording' from content_audio
+    content_audio = re.sub(r"^- # Voice recording", "", content_audio)
+
     # Finding all matches
     audio_entries = re.findall(entry_pattern, content_audio, re.DOTALL)
 
     # Add header to otherwise empty content_audio
-    content_audio = audio_entries[0]
+    content_audio = r"- # Voice recording"
 
     if new_item not in audio_entries:
         audio_entries.append(new_item)
@@ -165,7 +166,7 @@ def add_item_to_audio_section(filename_journal, new_item, print_new_content=Fals
     # remove duplicates in audio_entries
     audio_entries = list(dict.fromkeys(audio_entries))
 
-    for entry in audio_entries[1:]:
+    for entry in audio_entries:
         content_audio += f"\n\t- {entry}"
 
     updated_content = content_wo_audio + "\n\n" + content_audio
@@ -209,4 +210,5 @@ for index, row in df_audio_to_write.iterrows():
 
     df_audio.loc[index, "written_to_df"] = True
 
+df_audio["written_to_df"] = False
 save_df_audio_to_file(parameters, df_audio)
