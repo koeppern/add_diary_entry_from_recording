@@ -126,9 +126,59 @@ client = init_openai()
 
 df_audio = load_and_update_df_audio(parameters)
 
-# for rows where did_extraction is False: extract text and translate
-
-
 extract_text_from_audios(client, df_audio)
 
 save_df_audio_to_file(parameters, df_audio)
+
+
+# MD ------------------------------------------------------------------
+filename_journal = r"C:\documents\johannes_notes\logseq\journals\2023_11_12.md"
+
+nnew_item = "Pferd"
+
+
+def add_item_to_audio_section(filename_journal, new_item, print_new_content=False):
+    with open(filename_journal, "r", encoding="utf-8") as file:
+        content = file.read()
+
+    # extract section - Audio notes from content
+    # Pattern to extract content starting with '- # Voice recording' and ending at the next header or end of content
+    audio_pattern = r"^- # Voice recording$(.*?)(?=^- # |\Z)"
+    content_audio = re.search(audio_pattern, content, re.MULTILINE | re.DOTALL)
+
+    if content_audio:
+        content_audio = content_audio.group(0)
+    else:
+        content_audio = ""
+
+    # Content without audio part
+    content_wo_audio = re.sub(
+        audio_pattern, "", content, flags=re.MULTILINE | re.DOTALL
+    )
+
+    # Find all elements underneath # Voice recording
+    # Regular expression pattern to match entries following '- '
+    entry_pattern = r"(?m)^\s*- (.*?)(?=\n\s*- |\Z)"
+
+    # Finding all matches
+    audio_entries = re.findall(entry_pattern, content_audio, re.DOTALL)
+
+    # Add header to otherwise empty content_audio
+    content_audio = audio_entries[0]
+
+    if new_item not in audio_entries:
+        audio_entries.append(new_item)
+
+    for entry in audio_entries[1:]:
+        content_audio += f"\n\t- {entry}"
+
+    updated_content = content_wo_audio + "\n\n" + content_audio
+
+    with open(filename_journal, "w", encoding="utf-8") as file:
+        file.write(updated_content)
+
+    if print_new_content:
+        print(content_audio)
+
+
+add_item_to_audio_section(filename_journal, nnew_item, print_new_content=True)
