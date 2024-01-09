@@ -154,6 +154,10 @@ def add_item_to_audio_section(filename_journal, new_item, print_new_content=Fals
     # drop first row containing '- # Voice recording' from content_audio
     content_audio = re.sub(r"^- # Voice recording", "", content_audio)
 
+    # if content_wo_audio only contains one ore more \n, set content_wo_audio to empty string
+    if re.match(r"^\n+$", content_wo_audio):
+        content_wo_audio = ""
+
     # Finding all matches
     audio_entries = re.findall(entry_pattern, content_audio, re.DOTALL)
 
@@ -169,7 +173,14 @@ def add_item_to_audio_section(filename_journal, new_item, print_new_content=Fals
     for entry in audio_entries:
         content_audio += f"\n\t- {entry}"
 
-    updated_content = content_wo_audio + "\n\n" + content_audio
+    # add \n to content_wo_audio if it doesn't end with \n
+    if not content_wo_audio.endswith("\n"):
+        if len(content_wo_audio) > 0:
+            content_wo_audio += "\n"
+
+    print("---", content_wo_audio, content_audio)
+
+    updated_content = content_wo_audio + content_audio
 
     with open(filename_journal, "w", encoding="utf-8") as file:
         file.write(updated_content)
