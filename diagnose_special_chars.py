@@ -14,6 +14,8 @@ import getpass
 
 
 # Parameters
+special_char = "Ã"
+
 git_folder_path = "G://Meine Ablage//johannes_notes"
 # config_filename = "cofig.ini"
 config_filename = "C:\config\cofig.ini"
@@ -108,7 +110,7 @@ def write_df_to_md_file(filename_out, df):
     df_for_output = df.drop_duplicates()
     df_for_output.loc[:, "date"] = pd.to_datetime(df["date"])
 
-    df_for_output_sorted = df_for_output.sort_values("date",ascending=False )  # Sort by date column in ascending order
+    df_for_output_sorted = df_for_output.sort_values("date")  # Sort by date column in ascending order
     df_for_output_sorted.date = df_for_output_sorted["date"].dt.strftime("%Y-%m-%d")  # Convert date column back to string format
     df_for_output_sorted.text = [text.rstrip('\n') for text in df_for_output_sorted.text]
 
@@ -185,11 +187,12 @@ open_ai_key = load_api_key(config_filename)
 
 df = load_md_file_into_df(filename)
 
-df_with_audio = add_audios_to_df(folder_audio, open_ai_key, df)
+filtered_df = df[df['text'].str.contains(special_char)]
 
-write_df_to_md_file(filename_out, df_with_audio)
+filtered_df_2 = filtered_df[filtered_df['text'].str.contains("\[\[")]
 
-shutil.copyfile(filename_out, filename)
+print(len(df), len(filtered_df), len(filtered_df_2))
 
-git_commit(git_folder_path)
+print("No ATilde chars on 2023-06-06")
+
 # %%
