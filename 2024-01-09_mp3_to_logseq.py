@@ -79,6 +79,46 @@ def init_openai():
     return OpenAI(api_key=api_key)
 
 
+def extract_text_from_audios(client, df_audio):
+    df_audio_not_extracted = df_audio[df_audio["did_extraction"] == False]
+
+    for index, row in df_audio_not_extracted.iterrows():
+        audio_file = row["audio_file"]
+        date = row["date"]
+
+        try:
+            with open(audio_file, "rb") as f:
+                # Pass the file object to the transcribe method
+                result = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    language="en",
+                    response_format="text",
+                    file=f,
+                )
+
+                audio_file_replace = (
+                    audio_file.strip()
+                    .replace("\\", "/")
+                    .replace(" ", "%20")
+                    .rstrip("\n")
+                    .rstrip("\r\n")
+                    .replace("\n", "")
+                )
+
+                result = (
+                    result.strip() + f", [{audio_file}](file://{audio_file_replace})"
+                )
+
+                result = result.strip()
+
+                print(f"Apply Whisper to {audio_file}.")
+
+                df_audio.loc[index, "text"] = result
+                df_audio.loc[index, "did_extraction"] = True
+        except:
+            result = ""
+
+
 # -------------------------------------------------------
 ## App
 # -------------------------------------------------------
@@ -87,40 +127,8 @@ client = init_openai()
 df_audio = load_and_update_df_audio(parameters)
 
 # for rows where did_extraction is False: extract text and translate
-df_audio_not_extracted = df_audio[df_audio["did_extraction"] == False]
 
-for index, row in df_audio_not_extracted.iterrows():
-    audio_file = row["audio_file"]
-    date = row["date"]
 
-    try:
-        with open(audio_file, "rb") as f:
-            # Pass the file object to the transcribe method
-            result = client.audio.transcriptions.create(
-                model="whisper-1",
-                language="en",
-                response_format="text",
-                file=f,
-            )
-
-            audio_file_replace = (
-                audio_file.strip()
-                .replace("\\", "/")
-                .replace(" ", "%20")
-                .rstrip("\n")
-                .rstrip("\r\n")
-                .replace("\n", "")
-            )
-
-            result = result.strip() + f", [{audio_file}](file://{audio_file_replace})"
-
-            result = result.strip()
-
-            print(f"Apply Whisper to {audio_file}.")
-
-            df_audio.loc[index, "text"] = result
-            df_audio.loc[index, "did_extraction"] = True
-    except:
-        result = ""
+extract_text_from_audios(client, df_audio)
 
 save_df_audio_to_file(parameters, df_audio)
