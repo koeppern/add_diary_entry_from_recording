@@ -1,4 +1,4 @@
-# 2024-01-09_mp3_to_logseq.py
+print  # 2024-01-09_mp3_to_logseq.py
 # 2024-01-09
 # This script works with a dataframe (from and to CSV) containing all MP3s in a folder
 # younger then a date. If the column did_extraction indicates that the text wasn't recognized yet
@@ -79,14 +79,19 @@ def init_openai():
     return OpenAI(api_key=api_key)
 
 
-def extract_text_from_audios(client, df_audio):
+def extract_text_from_audios(client, df_audio, play_audio=False):
+    df_audio.reset_index(drop=True, inplace=True)
+
     df_audio_not_extracted = df_audio[df_audio["did_extraction"] == False]
 
     for index, row in df_audio_not_extracted.iterrows():
         audio_file = row["audio_file"]
+
         date = row["date"]
 
         try:
+            result = ""
+
             with open(audio_file, "rb") as f:
                 # Pass the file object to the transcribe method
                 result = client.audio.transcriptions.create(
@@ -113,33 +118,21 @@ def extract_text_from_audios(client, df_audio):
 
                 print(f"Apply Whisper to {audio_file}.")
 
+                print(df_audio["text"])
+
                 df_audio.loc[index, "text"] = result
+                df_audio.loc[index, "written_to_df"] = False
                 df_audio.loc[index, "did_extraction"] = True
         except:
             result = ""
 
 
-# -------------------------------------------------------
-## App
-# -------------------------------------------------------
-client = init_openai()
-
-df_audio = load_and_update_df_audio(parameters)
-
-extract_text_from_audios(client, df_audio)
-
-save_df_audio_to_file(parameters, df_audio)
-
-
-# MD ------------------------------------------------------------------
-filename_journal = r"C:\documents\johannes_notes\logseq\journals\2023_11_12.md"
-
-nnew_item = "Pferd"
-
-
 def add_item_to_audio_section(filename_journal, new_item, print_new_content=False):
-    with open(filename_journal, "r", encoding="utf-8") as file:
-        content = file.read()
+    try:
+        with open(filename_journal, "r", encoding="utf-8") as file:
+            content = file.read()
+    except:
+        content = ""
 
     # extract section - Audio notes from content
     # Pattern to extract content starting with '- # Voice recording' and ending at the next header or end of content
@@ -149,7 +142,7 @@ def add_item_to_audio_section(filename_journal, new_item, print_new_content=Fals
     if content_audio:
         content_audio = content_audio.group(0)
     else:
-        content_audio = ""
+        content_audio = "\t- # Voice recording"
 
     # Content without audio part
     content_wo_audio = re.sub(
@@ -169,6 +162,9 @@ def add_item_to_audio_section(filename_journal, new_item, print_new_content=Fals
     if new_item not in audio_entries:
         audio_entries.append(new_item)
 
+    # remove duplicates in audio_entries
+    audio_entries = list(dict.fromkeys(audio_entries))
+
     for entry in audio_entries[1:]:
         content_audio += f"\n\t- {entry}"
 
@@ -178,7 +174,39 @@ def add_item_to_audio_section(filename_journal, new_item, print_new_content=Fals
         file.write(updated_content)
 
     if print_new_content:
-        print(content_audio)
+        print("Hola")
+        print(updated_content)
 
 
-add_item_to_audio_section(filename_journal, nnew_item, print_new_content=True)
+# -------------------------------------------------------
+## App
+# -------------------------------------------------------
+client = init_openai()
+
+df_audio = load_and_update_df_audio(parameters)
+
+extract_text_from_audios(client, df_audio)
+
+# Write items to journal files ------------------------------------------------------------------
+# Loop over the rows of df_audio where did_extraction is True and written_to_df is False
+if "written_to_df" not in df_audio.columns:
+    df_audio["written_to_df"] = False
+
+df_audio_to_write = df_audio[
+    (df_audio["did_extraction"] == True) & (df_audio["written_to_df"] == False)
+]
+
+for index, row in df_audio_to_write.iterrows():
+    this_date = row["date"]
+
+    this_text = row["text"]
+
+    this_filename_journal = (
+        r"C:\documents\johannes_notes\logseq\journals\\" + this_date + ".md"
+    )
+
+    add_item_to_audio_section(this_filename_journal, this_text, print_new_content=False)
+
+    df_audio.loc[index, "written_to_df"] = True
+
+save_df_audio_to_file(parameters, df_audio)
